@@ -1,0 +1,140 @@
+<!-- templates/default.html - 默认 HTML 模板 (v1.0) -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ database_name }} - Schema Documentation</title>
+    <link rel="stylesheet" href="default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            er: {
+                diagramDirection: 'LR'
+            }
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Database: {{ database_name }}</h1>
+        <p>Schema: {{ schema_name }}</p>
+        <p>Generated on: {{ generated_at }}</p>
+        <hr>
+    </header>
+
+    <main>
+        <section id="table-of-contents">
+            <h2>Table of Contents</h2>
+            <ul>
+                {% for table in tables %}
+                <li><a href="#{{ table.name }}">{{ table.name }}</a> ({{ table.columns | length }} columns{% if table.indexes | length > 0 %}, {{ table.indexes | length }} indexes{% endif %})</li>
+                {% endfor %}
+            </ul>
+            <hr>
+        </section>
+
+        <section id="tables">
+            <h2>Tables</h2>
+            {% for table in tables %}
+            <article id="{{ table.name }}">
+                <h3>{{ table.name }}</h3>
+                {% if table.comment %}
+                <p><strong>Description</strong>: {{ table.comment }}</p>
+                {% endif %}
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Nullable</th>
+                            <th>Default</th>
+                            <th>Comment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for col in table.columns %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ col.name }}</td>
+                            <td><code>{{ col.data_type }}</code></td>
+                            <td>{% if col.nullable %}YES{% else %}NO{% endif %}</td>
+                            <td><code>{{ col.default_value | default(value="-") }}</code></td>
+                            <td>{{ col.comment | default(value="-") }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if table.primary_key %}
+                <p><strong>Primary Key</strong>: <code>{{ table.primary_key.name }}</code> ({{ table.primary_key.columns | join(", ") }})</p>
+                {% endif %}
+
+                {% if table.foreign_keys | length > 0 %}
+                <p><strong>Foreign Keys</strong>:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Column(s)</th>
+                            <th>References</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fk in table.foreign_keys %}
+                        <tr>
+                            <td>{{ fk.name }}</td>
+                            <td>{{ fk.columns | join(", ") }}</td>
+                            <td>{{ fk.referenced_table }}({{ fk.referenced_columns | join(", ") }})</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if table.indexes | length > 0 %}
+                <p><strong>Indexes</strong>:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Columns</th>
+                            <th>Unique</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idx in table.indexes %}
+                        <tr>
+                            <td>{{ idx.name }}</td>
+                            <td>{{ idx.columns | join(", ") }}</td>
+                            <td>{% if idx.is_unique %}YES{% else %}NO{% endif %}</td>
+                            <td>{{ idx.index_type | default(value="btree") }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <hr>
+            </article>
+            {% endfor %}
+        </section>
+
+        <section id="er-diagram">
+            <h2>ER Diagram</h2>
+            <div class="mermaid">
+{{ er_diagram }}
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Generated by <a href="https://github.com/MasterHesse/crab-shell">crab-shell</a> v{{ version }}</p>
+    </footer>
+</body>
+</html>

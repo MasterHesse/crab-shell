@@ -1,0 +1,22 @@
+# clippy.toml - Clippy Lint 配置
+
+# 允许的数学int类型转换
+allow_int_to_int_cast = true
+
+# 允许的浮点到整数转换
+allow_float_to_int_cast = true
+
+# MSRV (最低支持的 Rust 版本)
+msrv = "1.77.0"
+
+# 是否检查所有目标
+all_targets = true
+
+# 是否检查测试代码
+tests = true
+
+# 是否检查示例代码
+examples = true
+
+# 是否检查基准测试
+benchmarks = true

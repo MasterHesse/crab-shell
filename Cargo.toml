@@ -1,0 +1,63 @@
+[package]
+name = "crab-shell"
+version = "0.1.0"
+edition = "2021"
+description = "PostgreSQL Schema 文档生成器 - 一键生成 ER 图 + 数据字典 + 变更记录"
+authors = ["MasterHesse"]
+license = "MIT"
+repository = "https://github.com/MasterHesse/crab-shell"
+documentation = "https://github.com/MasterHesse/crab-shell#readme"
+readme = "README.md"
+keywords = ["postgresql", "schema", "documentation", "cli", "erd"]
+categories = ["command-line-utilities", "database"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+indicatif = "0.17"
+console = "0.15"
+miette = { version = "5", features = ["fancy"] }
+dialoguer = "0.11"
+
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+tokio-postgres = "0.7"
+async-trait = "0.1"
+
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+# 模板
+tera = "1"
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# 错误处理
+anyhow = "1"
+thiserror = "1"
+
+# 工具
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+similar = "2"
+
+[dev-dependencies]
+# 容器化测试
+testcontainers = "0.15"
+testcontainers-modules = { version = "0.3", features = ["postgres"] }
+# 参数化测试
+rstest = "0.18"
+# 假数据生成
+fake = { version = "2", features = ["derive"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true

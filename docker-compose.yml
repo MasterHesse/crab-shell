@@ -1,0 +1,77 @@
+# docker-compose.yml - crab-shell 容器编排
+version: "3.8"
+
+services:
+  # PostgreSQL - MVP 主力数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: crab-shell-postgres
+    environment:
+      POSTGRES_USER: hesse
+      POSTGRES_PASSWORD: hesse
+      POSTGRES_DB: crab_shell_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d  # 初始化 SQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hesse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MySQL - v1.2 多数据库扩展
+  mysql:
+    image: mysql:8.0
+    container_name: crab-shell-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: hesse
+      MYSQL_PASSWORD: hesse
+      MYSQL_DATABASE: crab_shell_test
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+      - ./docker/initdb-mysql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mysql  # 按需启动，不随默认 compose up 启动
+
+  # MongoDB - v1.3 多数据库扩展
+  mongodb:
+    image: mongo:7
+    container_name: crab-shell-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: hesse
+      MONGO_INITDB_ROOT_PASSWORD: hesse
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mongodb  # 按需启动
+      
+  # Redis - 未来扩展
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: crab-shell-redis
+  #   ports:
+  #     - "6379:6379"
+  #   profiles:
+  #     - redis
+
+volumes:
+  pgdata:
+  mysqldata:
+  mongodata:

@@ -1,0 +1,41 @@
+# rustfmt.toml - Rust 格式化配置
+
+# 最大行宽
+max_width = 100
+
+# 缩进空格数
+indent_style = "Spaces"
+tab_spaces = 4
+
+# 换行风格
+newline_style = "Unix"
+
+# 是否导入分组
+imports_layout = "StdExternalCrate"
+
+# 合并单行函数
+merge_imports = true
+
+# 结构体字段尾随逗号
+struct_lit_trailing_comma = "Always"
+
+# 数组元素尾随逗号
+array_layout = "Indented"
+
+# 链式调用多行
+chain_width = 60
+
+# 函数调用宽度
+fn_call_width = 60
+
+# 属性宽度
+attr_fn_like_width = 70
+
+# 允许混合空格和制表符
+hard_tabs = false
+
+# 使用字段初始化简写
+use_field_init_shorthand = true
+
+# 使用元组初始化简写
+use_try_shorthand = true
