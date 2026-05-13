@@ -1,88 +1,111 @@
-# crab-shell
+<div align="center">
 
-> **crab-shell**：Rust 编写的数据库 Schema 文档交付工具。蟹壳是螃蟹的外层描述，正如文档是数据库的外层描述。shell 既是蟹壳，也是命令行。
+# 🦀 crab-shell
 
-## 简介
+> **数据库 Schema 文档交付工具** —— 一键生成 ER 图 + 数据字典 + 变更记录，打包可分享的交付包。
 
-crab-shell 是一个 PostgreSQL Schema 快照文档生成器，一键生成 ER 图 + 数据字典 + 变更记录，打包成可分享的交付文档包。
+[![Rust](https://img.shields.io/badge/rust-1.77+-blue.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12%2B-blue)](https://www.postgresql.org)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/MasterHesse/crab-shell/pulls)
 
-### 核心功能
+</div>
 
-- 支持 PostgreSQL 数据库连接（只读）
-- 生成 Markdown 格式数据字典
-- 生成 Mermaid ER 图（按 schema 分组）
-- 生成当前 Schema 的 JSON 快照
-- 提供 CLI 入口（`crab-shell generate`）
+---
 
-### 安装
+## 📌 简介
 
-#### 从 Release 下载
+`crab-shell` 是一个用 Rust 编写的 **PostgreSQL Schema 快照文档生成器**。只需一条命令，即可生成：
+
+- 📄 **Markdown 数据字典**（含字段、类型、约束、注释）
+- 📊 **Mermaid ER 图**（按 schema 分组，自动布局）
+- 💾 **JSON 快照**（便于版本对比和自动化处理）
+- 🔄 **变更记录**（多版本支持，即将到来）
+
+所有输出打包成一个整洁的文档包，方便团队协作、代码评审、合规归档。
+
+---
+
+## ✨ 核心功能
+
+| 功能 | 描述 |
+|------|------|
+| 🔌 数据库连接 | 安全只读连接 PostgreSQL（支持连接池、重试） |
+| 📄 数据字典 | 生成带锚点目录、类型、默认值、注释的完整字典 |
+| 📊 ER 图 | 基于 Mermaid 生成关系图，按 schema 分组，支持大表拆分 |
+| 💾 JSON 快照 | 导出 Schema 的结构化快照，可用于差异对比 |
+| ⚡ CLI 入口 | `crab-shell generate` 命令，支持环境变量、配置文件、命令行参数 |
+
+---
+
+## 🚀 快速开始
+
+### 📥 安装
+
+#### 方式一：下载预编译二进制
 
 ```bash
-# 下载预编译二进制
+# 下载（以 Linux x86_64 为例）
 wget https://github.com/MasterHesse/crab-shell/releases/download/v0.1.0/crab-shell-linux-x86_64
 
 # 添加执行权限
 chmod +x crab-shell-linux-x86_64
 
-# 移动到 PATH
+# 移到 PATH
 sudo mv crab-shell-linux-x86_64 /usr/local/bin/crab-shell
 
-# 验证安装
+# 验证
 crab-shell --help
 ```
 
-#### 从源码编译
+#### 方式二：从源码编译
 
 ```bash
-# 克隆仓库
 git clone https://github.com/MasterHesse/crab-shell.git
 cd crab-shell
-
-# 编译
 cargo build --release
-
-# 安装到 PATH
 cargo install --path .
 ```
 
-### 使用方法
+---
 
-#### 基本用法
+## 📖 使用指南
+
+### 基本用法
 
 ```bash
 # 使用环境变量
 export DATABASE_URL="postgres://user:pass@localhost:5432/mydb"
 crab-shell generate --output ./docs
 
-# 指定连接字符串
+# 直接指定连接字符串
 crab-shell generate --url "postgres://user:pass@localhost:5432/mydb" --output ./docs
 
 # 使用配置文件
 crab-shell generate --config crab-shell.yaml
 ```
 
-#### 命令行选项
+### 命令行选项
 
-```
+```text
 crab-shell generate [OPTIONS]
 
 Options:
-  -u, --url <URL>              Database connection string [env: DATABASE_URL]
-  -s, --schema <SCHEMA>        Target schema name [default: public]
-  -o, --output <DIR>           Output directory [default: ./docs]
-  -f, --format <FORMAT>        Output format [default: markdown] [possible values: markdown, html, json, all]
-  -c, --config <FILE>          Configuration file path
-      --include-views          Include views in documentation
-      --exclude-tables <LIST>  Tables to exclude (comma-separated, glob supported)
-      --max-tables <N>         Max tables per ER diagram [default: 30]
-  -h, --help                   Print help
-  -V, --version                Print version
+  -u, --url <URL>              数据库连接字符串 [env: DATABASE_URL]
+  -s, --schema <SCHEMA>        目标 schema 名称 [default: public]
+  -o, --output <DIR>           输出目录 [default: ./docs]
+  -f, --format <FORMAT>        输出格式 [default: markdown] [possible: markdown, html, json, all]
+  -c, --config <FILE>          配置文件路径
+      --include-views          在文档中包含视图
+      --exclude-tables <LIST>  排除的表（逗号分隔，支持 glob）
+      --max-tables <N>         每个 ER 图最大表数量 [default: 30]
+  -h, --help                   打印帮助信息
+  -V, --version                打印版本号
 ```
 
-### 配置文件
+### ⚙️ 配置文件示例
 
-创建 `crab-shell.yaml` 配置文件：
+创建 `crab-shell.yaml`：
 
 ```yaml
 database:
@@ -103,9 +126,11 @@ options:
   max_tables_per_diagram: 30
 ```
 
-### 示例输出
+---
 
-#### Markdown 数据字典
+## 📊 输出示例
+
+### Markdown 数据字典
 
 ```markdown
 # mydb - Database Schema
@@ -131,7 +156,7 @@ options:
 **Primary Key**: `id` (users_pkey)
 ```
 
-#### Mermaid ER 图
+### Mermaid ER 图
 
 ```mermaid
 erDiagram
@@ -146,39 +171,31 @@ erDiagram
     }
 ```
 
-### 开发
+---
 
-#### 环境要求
+## 🛠️ 开发
 
-- Rust 1.77+
-- Docker (用于容器化测试)
-- PostgreSQL 12+ (用于开发测试)
+### 环境要求
 
-#### 开发流程
+- 🦀 Rust 1.77+
+- 🐳 Docker（用于容器化测试）
+- 🐘 PostgreSQL 12+（用于开发测试）
+
+### 开发流程
 
 ```bash
-# 启动开发数据库
+# 启动测试数据库
 docker compose up -d postgres
 
-# 运行测试
+# 运行测试套件
 cargo test
 
-# 运行 CLI
+# 本地运行 CLI
 cargo run -- generate --url postgres://hesse:hesse@localhost:5432/crab_shell_test --output ./docs
 
-# 构建 Release
+# 构建发布版本
 cargo build --release
 ```
-
-### 技术栈
-
-- **语言**: Rust (edition 2021)
-- **异步运行时**: Tokio
-- **CLI 框架**: clap
-- **数据库驱动**: tokio-postgres
-- **模板引擎**: Tera
-- **错误处理**: anyhow + thiserror + miette
-- **测试**: testcontainers-rs (容器化集成测试)
 
 ### 项目结构
 
@@ -186,39 +203,54 @@ cargo build --release
 crab-shell/
 ├── Cargo.toml
 ├── src/
-│   ├── main.rs                 # 入口
-│   ├── cli/                    # 应用层 - CLI 命令
+│   ├── main.rs                 # 入口点
+│   ├── cli/                    # 应用层 – CLI 命令
 │   ├── config.rs               # 配置解析
-│   ├── schema/                 # 领域层 - Schema 模型
-│   ├── generator/              # 领域层 - 文档生成
-│   ├── snapshot/               # 领域层 - 快照管理
-│   ├── infra/                  # 基础设施层 - 数据库适配器
-│   └── error.rs                # 错误类型
+│   ├── schema/                 # 领域层 – Schema 模型
+│   ├── generator/              # 领域层 – 文档生成
+│   ├── snapshot/               # 领域层 – 快照管理
+│   ├── infra/                  # 基础设施层 – 数据库适配器
+│   └── error.rs                # 统一错误类型
 ├── tests/                      # 集成测试
 ├── docker-compose.yml          # 容器编排
 └── README.md
 ```
 
-### 路线图
+---
 
-- [x] MVP - 基础文档生成
-- [ ] v1.0 - HTML 输出 + 模板系统
-- [ ] v1.1 - Schema Diff + 变更记录
-- [ ] v1.2 - PDF 输出
-- [ ] v2.0 - TUI 交互界面
+## 🗺️ 路线图
 
-### 许可证
+| 版本 | 里程碑 | 状态 |
+|------|--------|------|
+| v0.1.0 | MVP – 基础文档生成 | ✅ 已完成 |
+| v1.0   | HTML 输出 + 模板系统 | 🚧 进行中 |
+| v1.1   | Schema Diff + 变更记录 | 📋 计划中 |
+| v1.2   | PDF 输出 | 📋 计划中 |
+| v2.0   | TUI 交互界面 | 📋 计划中 |
 
-MIT License
+---
 
-### 贡献
+## 🤝 贡献
 
-欢迎提交 Issue 和 Pull Request！
+欢迎任何形式的贡献！请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)（如有）或直接提交 Issue / Pull Request。
 
-### 作者
+### 贡献方式
 
-叶彬弘 (MasterHesse)
+- 🐛 报告 Bug
+- 💡 提议新功能
+- 📝 改进文档
+- 🔧 提交代码修复或增强
 
-### 更新日志
+## 📄 许可证
 
-查看 [CHANGELOG.md](CHANGELOG.md)
+本项目采用 **MIT 许可证**。详情参见 [LICENSE](LICENSE) 文件。
+
+## 📝 更新日志
+
+查看 [CHANGELOG.md](CHANGELOG.md) 了解每个版本的详细变更。
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by <a href="https://github.com/MasterHesse">MasterHesse</a> and contributors</sub>
+</div>
