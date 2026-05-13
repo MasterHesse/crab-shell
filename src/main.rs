@@ -24,17 +24,39 @@ async fn main() -> anyhow::Result<()> {
 
     // 根据子命令分发处理
     match cli.command {
-        Commands::Generate { .. } => {
-            // TODO: 实现 generate 命令
-            println!("Generate command - 待实现");
+        Commands::Generate { 
+            url, 
+            schema, 
+            output, 
+            format, 
+            config: _,
+            include_views, 
+            exclude_tables,
+            max_tables_per_diagram: _,
+        } => {
+            if let Err(e) = cli::commands::handle_generate(
+                url.as_deref(),
+                &schema,
+                &output,
+                &format,
+                include_views,
+                exclude_tables.as_deref(),
+            ).await {
+                eprintln!("错误: {}", e);
+                std::process::exit(1);
+            }
         }
-        Commands::Snapshot { .. } => {
-            // TODO: 实现 snapshot 命令
-            println!("Snapshot command - 待实现");
+        Commands::Snapshot { action } => {
+            if let Err(e) = cli::commands::handle_snapshot(&action).await {
+                eprintln!("错误: {}", e);
+                std::process::exit(1);
+            }
         }
-        Commands::Diff { .. } => {
-            // TODO: 实现 diff 命令
-            println!("Diff command - 待实现");
+        Commands::Diff { old, new, output } => {
+            if let Err(e) = cli::commands::handle_diff(&old, &new, output.as_deref()) {
+                eprintln!("错误: {}", e);
+                std::process::exit(1);
+            }
         }
     }
 

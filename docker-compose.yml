@@ -3,6 +3,7 @@ version: "3.8"
 
 services:
   # PostgreSQL - MVP 主力数据库
+  # 注意：在 WSL2 环境下需要使用 bridge 网络模式 + 端口映射
   postgres:
     image: postgres:16-alpine
     container_name: crab-shell-postgres
@@ -11,10 +12,11 @@ services:
       POSTGRES_PASSWORD: hesse
       POSTGRES_DB: crab_shell_test
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/initdb:/docker-entrypoint-initdb.d  # 初始化 SQL
+      - pg_sockets:/var/run/postgresql  # Unix socket 映射
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hesse"]
       interval: 5s
@@ -75,3 +77,4 @@ volumes:
   pgdata:
   mysqldata:
   mongodata:
+  pg_sockets:

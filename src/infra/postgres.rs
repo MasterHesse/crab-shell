@@ -13,12 +13,24 @@ pub struct PostgresAdapter {
 }
 
 impl PostgresAdapter {
+    /// 从连接字符串解析 host 和 port
+    fn parse_connection_info(url: &str) -> (String, u16) {
+        if let Ok(parsed) = url::Url::parse(url) {
+            let host = parsed.host_str().unwrap_or("localhost").to_string();
+            let port = parsed.port().unwrap_or(5432);
+            (host, port)
+        } else {
+            ("localhost".to_string(), 5432)
+        }
+    }
+
     /// 创建新的 PostgreSQL 适配器
     pub async fn new(connection_string: &str) -> Result<Self> {
+        let (host, port) = Self::parse_connection_info(connection_string);
         let (client, connection) = tokio_postgres::connect(connection_string, NoTls).await
             .map_err(|e| crate::error::CrabShellError::ConnectionFailed {
-                host: "localhost".to_string(),
-                port: 5432,
+                host,
+                port,
                 reason: e.to_string(),
                 help: "请检查数据库是否在运行，连接参数是否正确。".to_string(),
             })?;
@@ -149,9 +161,93 @@ impl SchemaReader for PostgresAdapter {
         Ok(columns)
     }
 
-    async fn read_constraints(&self, _schema_name: &str, _table_name: &str) -> Result<Vec<Constraint>> {
-        // TODO: 实现约束读取
-        Ok(vec![])
+    async fn read_constraints(&self, schema_name: &str, table_name: &str) -> Result<Vec<Constraint>> {
+        let mut constraints = Vec::new();
+        
+        // 读取 CHECK 约束
+        let check_rows = self.client.query(
+            "SELECT conname, pg_get_constraintdef(oid) 
+             FROM pg_constraint 
+             JOIN pg_class ON conrelid = pg_class.oid
+             JOIN pg_namespace ON relnamespace = pg_namespace.oid
+             WHERE contype = 'c' 
+               AND nspname = $1 AND relname = $2",
+            &[&schema_name, &table_name],
+        ).await?;
+        
+        for row in check_rows {
+            let name: String = row.get(0);
+            let definition: String = row.get(1);
+            
+            // 从定义中提取列名 (CHECK (column > 0))
+            let columns = PostgresAdapter::extract_columns_from_check(&definition);
+            
+            constraints.push(Constraint {
+                name,
+                constraint_type: "CHECK".to_string(),
+                columns,
+                definition: Some(definition),
+            });
+        }
+        
+        // 读取 UNIQUE 约束
+        let unique_rows = self.client.query(
+            "SELECT tc.constraint_name, kcu.column_name
+             FROM information_schema.table_constraints tc
+             JOIN information_schema.key_column_usage kcu
+               ON tc.constraint_name = kcu.constraint_name
+             WHERE tc.table_schema = $1 AND tc.table_name = $2
+               AND tc.constraint_type = 'UNIQUE'
+             ORDER BY tc.constraint_name, kcu.ordinal_position",
+            &[&schema_name, &table_name],
+        ).await?;
+        
+        // 按约束名分组
+        let mut unique_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+        for row in unique_rows {
+            let name: String = row.get(0);
+            let column: String = row.get(1);
+            unique_map.entry(name).or_default().push(column);
+        }
+        
+        for (name, columns) in unique_map {
+            constraints.push(Constraint {
+                name,
+                constraint_type: "UNIQUE".to_string(),
+                columns,
+                definition: None,
+            });
+        }
+        
+        // 读取 REFERENCES 约束 (外键)
+        let fk_rows = self.client.query(
+            "SELECT tc.constraint_name, kcu.column_name
+             FROM information_schema.table_constraints tc
+             JOIN information_schema.key_column_usage kcu
+               ON tc.constraint_name = kcu.constraint_name
+             WHERE tc.table_schema = $1 AND tc.table_name = $2
+               AND tc.constraint_type = 'FOREIGN KEY'
+             ORDER BY tc.constraint_name, kcu.ordinal_position",
+            &[&schema_name, &table_name],
+        ).await?;
+        
+        let mut fk_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+        for row in fk_rows {
+            let name: String = row.get(0);
+            let column: String = row.get(1);
+            fk_map.entry(name).or_default().push(column);
+        }
+        
+        for (name, columns) in fk_map {
+            constraints.push(Constraint {
+                name,
+                constraint_type: "REFERENCES".to_string(),
+                columns,
+                definition: None,
+            });
+        }
+        
+        Ok(constraints)
     }
 
     async fn read_indexes(&self, schema_name: &str, table_name: &str) -> Result<Vec<Index>> {
@@ -262,5 +358,45 @@ impl PostgresAdapter {
             name: constraint_name,
             columns,
         }))
+    }
+    
+    /// 从 CHECK 约束定义中提取列名
+    fn extract_columns_from_check(definition: &str) -> Vec<String> {
+        // CHECK 约束格式: (column > 0) 或 CHECK (column > 0)
+        let definition = definition.trim();
+        let content = if definition.starts_with("CHECK (") {
+            &definition[7..definition.len()-1]
+        } else {
+            definition
+        };
+        
+        // 简单提取：找到列名字符（字母数字下划线）
+        let mut columns = Vec::new();
+        let mut current = String::new();
+        let mut in_identifier = false;
+        
+        for ch in content.chars() {
+            if ch.is_alphanumeric() || ch == '_' {
+                current.push(ch);
+                in_identifier = true;
+            } else {
+                if in_identifier && !current.is_empty() {
+                    // 过滤掉数字开头的（可能是值而非列名）
+                    if !current.chars().next().map(|c| c.is_numeric()).unwrap_or(false) {
+                        columns.push(current.clone());
+                    }
+                    current.clear();
+                }
+                in_identifier = false;
+            }
+        }
+        
+        if in_identifier && !current.is_empty() {
+            if !current.chars().next().map(|c| c.is_numeric()).unwrap_or(false) {
+                columns.push(current);
+            }
+        }
+        
+        columns
     }
 }

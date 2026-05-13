@@ -10,6 +10,17 @@ pub struct ConnectionManager {
 }
 
 impl ConnectionManager {
+    /// 从连接字符串解析 host 和 port
+    fn parse_connection_info(url: &str) -> (String, u16) {
+        if let Ok(parsed) = url::Url::parse(url) {
+            let host = parsed.host_str().unwrap_or("localhost").to_string();
+            let port = parsed.port().unwrap_or(5432);
+            (host, port)
+        } else {
+            ("localhost".to_string(), 5432)
+        }
+    }
+
     /// 创建新的连接管理器
     pub fn new(connection_string: &str) -> Self {
         Self {
@@ -19,10 +30,11 @@ impl ConnectionManager {
 
     /// 获取连接
     pub async fn connect(&self) -> Result<Client> {
+        let (host, port) = Self::parse_connection_info(&self.connection_string);
         let (client, connection) = tokio_postgres::connect(&self.connection_string, NoTls).await
             .map_err(|e| CrabShellError::ConnectionFailed {
-                host: "localhost".to_string(),
-                port: 5432,
+                host,
+                port,
                 reason: e.to_string(),
                 help: "请检查数据库连接参数".to_string(),
             })?;

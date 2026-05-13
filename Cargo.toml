@@ -46,6 +46,7 @@ thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
 similar = "2"
+url = "2"
 
 [dev-dependencies]
 # 容器化测试

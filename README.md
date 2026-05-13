@@ -75,11 +75,11 @@ cargo install --path .
 
 ```bash
 # 使用环境变量
-export DATABASE_URL="postgres://user:pass@localhost:5432/mydb"
+export DATABASE_URL="postgres://hesse:hesse@localhost:5433/crab_shell_test"
 crab-shell generate --output ./docs
 
 # 直接指定连接字符串
-crab-shell generate --url "postgres://user:pass@localhost:5432/mydb" --output ./docs
+crab-shell generate --url "postgres://hesse:hesse@localhost:5433/crab_shell_test" --output ./docs
 
 # 使用配置文件
 crab-shell generate --config crab-shell.yaml
@@ -109,7 +109,7 @@ Options:
 
 ```yaml
 database:
-  url: "postgres://localhost:5432/mydb"
+  url: "postgres://localhost:5433/mydb"
   schema: public
   connect_timeout: 30
   max_retries: 3
@@ -173,31 +173,8 @@ erDiagram
 
 ---
 
-## 🛠️ 开发
 
-### 环境要求
-
-- 🦀 Rust 1.77+
-- 🐳 Docker（用于容器化测试）
-- 🐘 PostgreSQL 12+（用于开发测试）
-
-### 开发流程
-
-```bash
-# 启动测试数据库
-docker compose up -d postgres
-
-# 运行测试套件
-cargo test
-
-# 本地运行 CLI
-cargo run -- generate --url postgres://hesse:hesse@localhost:5432/crab_shell_test --output ./docs
-
-# 构建发布版本
-cargo build --release
-```
-
-### 项目结构
+## 项目结构
 
 ```
 crab-shell/

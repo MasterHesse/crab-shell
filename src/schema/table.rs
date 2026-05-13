@@ -58,7 +58,8 @@ pub struct Index {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Constraint {
     pub name: String,
-    pub constraint_type: String,
+    pub constraint_type: String,  // CHECK, UNIQUE, PRIMARY KEY, FOREIGN KEY, REFERENCES 等
+    pub columns: Vec<String>,     // 约束涉及的列
     pub definition: Option<String>,
 }
 

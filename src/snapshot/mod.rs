@@ -4,5 +4,5 @@ pub mod store;
 pub mod differ;
 
 // 重新导出主要类型
-pub use store::SnapshotManager;
-pub use differ::SchemaDiffer;
+pub use store::{SnapshotManager, DefaultSnapshotManager};
+pub use differ::{SchemaDiffer, SchemaDiff, TableDiff, ColumnDiff, DiffType};
